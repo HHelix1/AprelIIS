@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Рекомендации для {{ employee.Full_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Главная</a></li>
+                <li class="breadcrumb-item"><a href="/employees">Сотрудники</a></li>
+                <li class="breadcrumb-item active">{{ employee.Full_name }}</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#assignTrainingModal">
+            + Назначить обучение
+        </button>
+        <button class="btn btn-info" onclick="generateRecommendations({{ employee.Worker_id }})">
+            Сгенерировать рекомендации
+        </button>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Информация о сотруднике</h5>
+            </div>
+            <div class="card-body">
+                <h4>{{ employee.Full_name }}</h4>
+                <p><strong>Должность:</strong> {{ employee.Position }}</p>
+                <p><strong>Email:</strong> {{ employee.email }}</p>
+                <p><strong>Телефон:</strong> {{ employee.Phone_number }}</p>
+                {% if employee.Birth_date %}
+                <p><strong>Дата рождения:</strong> {{ employee.Birth_date.strftime('%d.%m.%Y') }}</p>
+                {% endif %}
+                {% if employee.Work_duration %}
+                <p><strong>Дата начала работы:</strong> {{ employee.Work_duration.strftime('%d.%m.%Y') }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Статистика</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-4">
+                        <div class="text-center">
+                            <h3>{{ stats.total_trainings }}</h3>
+                            <p>Всего обучений</p>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-center">
+                            <h3>{{ stats.completed_trainings }}</h3>
+                            <p>Завершено</p>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-center">
+                            <h3>{{ "%.1f"|format(stats.avg_score) }}</h3>
+                            <p>Средний балл</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Рекомендованные программы обучения</h5>
+            </div>
+            <div class="card-body">
+                {% if recommendations %}
+                <div class="row">
+                    {% for rec in recommendations %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h5 class="card-title">{{ rec.program.Name }}</h5>
+                                    <span class="badge bg-success">{{ rec.score }}%</span>
+                                </div>
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    Протокол №{{ rec.program.Protocol_number }}
+                                </h6>
+                                <p class="card-text">
+                                    <small>Рекомендовано: {{ rec.creation_date.strftime('%d.%m.%Y') }}</small>
+                                </p>
+                                <button class="btn btn-sm btn-primary"
+                                        onclick="assignTraining({{ employee.Worker_id }}, {{ rec.program.Education_Id }})">
+                                    Назначить обучение
+                                </button>
+                                <button class="btn btn-sm btn-danger"
+                                        onclick="deleteRecommendation({{ rec.recommendation_id }})">
+                                    Удалить
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    Нет рекомендаций для этого сотрудника. Нажмите "Сгенерировать рекомендации"
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">История обучений</h5>
+            </div>
+            <div class="card-body">
+                {% if trainings %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Программа</th>
+                                <th>Дата начала</th>
+                                <th>Дата окончания</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for training in trainings %}
+                            <tr>
+                                <td>{{ training.program.Name }}</td>
+                                <td>{{ training.Begin_date.strftime('%d.%m.%Y') }}</td>
+                                <td>{{ training.End_date.strftime('%d.%m.%Y') }}</td>
+                                <td>
+                                    <select class="form-select form-select-sm status-select"
+                                            data-id="{{ training.id }}" style="width: 120px;">
+                                        <option value="planned" {% if training.status == 'planned' %}selected{% endif %}>Запланировано</option>
+                                        <option value="in_progress" {% if training.status == 'in_progress' %}selected{% endif %}>В процессе</option>
+                                        <option value="completed" {% if training.status == 'completed' %}selected{% endif %}>Завершено</option>
+                                        <option value="cancelled" {% if training.status == 'cancelled' %}selected{% endif %}>Отменено</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteTraining({{ training.id }})">Удалить</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-secondary">
+                    Нет записей об обучении
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно назначения обучения -->
+<div class="modal fade" id="assignTrainingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Назначить обучение</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="assignTrainingForm">
+                    <div class="mb-3">
+                        <label class="form-label">Программа обучения *</label>
+                        <select name="Education_Id" class="form-select" required>
+                            <option value="">Выберите программу</option>
+                            {% for program in all_programs %}
+                            <option value="{{ program.Education_Id }}">{{ program.Name }} (Протокол №{{ program.Protocol_number }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Дата начала *</label>
+                        <input type="date" name="Begin_date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Дата окончания *</label>
+                        <input type="date" name="End_date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Статус</label>
+                        <select name="status" class="form-select">
+                            <option value="planned">Запланировано</option>
+                            <option value="in_progress">В процессе</option>
+                            <option value="completed">Завершено</option>
+                            <option value="cancelled">Отменено</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="submitTraining()">Назначить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function assignTraining(workerId, programId) {
+    const select = document.querySelector('#assignTrainingForm select[name="Education_Id"]');
+    if (select) select.value = programId;
+    document.getElementById('assignTrainingModal').setAttribute('data-worker-id', workerId);
+    new bootstrap.Modal(document.getElementById('assignTrainingModal')).show();
+}
+
+function submitTraining() {
+    const workerId = document.getElementById('assignTrainingModal').getAttribute('data-worker-id');
+    const form = document.getElementById('assignTrainingForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    data.Worker_id = parseInt(workerId);
+
+    fetch('/api/trainings/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            return response.json().then(err => { throw new Error(err.detail); });
+        }
+    })
+    .catch(error => {
+        alert('Ошибка: ' + error.message);
+    });
+}
+
+function deleteTraining(id) {
+    if (confirm('Удалить назначение на обучение?')) {
+        fetch(`/api/trainings/${id}`, { method: 'DELETE' })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Ошибка при удалении');
+                }
+            });
+    }
+}
+
+function deleteRecommendation(id) {
+    if (confirm('Удалить рекомендацию?')) {
+        fetch(`/api/recommendations/${id}`, { method: 'DELETE' })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Ошибка при удалении');
+                }
+            });
+    }
+}
+
+function generateRecommendations(workerId) {
+    if (confirm('Сгенерировать новые рекомендации для сотрудника?')) {
+        fetch(`/api/generate-employee-recommendations/${workerId}?count=5`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();
+            })
+            .catch(error => {
+                alert('Ошибка: ' + error);
+            });
+    }
+}
+
+document.querySelectorAll('.status-select').forEach(select => {
+    select.addEventListener('change', function() {
+        const id = this.dataset.id;
+        const status = this.value;
+        fetch(`/api/trainings/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({status: status})
+        })
+        .then(response => {
+            if (!response.ok) {
+                alert('Ошибка при обновлении статуса');
+                location.reload();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

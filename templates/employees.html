@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Сотрудники{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Сотрудники</h1>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+            + Добавить сотрудника
+        </button>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col">
+        <input type="text" id="searchInput" class="form-control" placeholder="Поиск по ФИО или email...">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ФИО</th>
+                        <th>Должность</th>
+                        <th>Email</th>
+                        <th>Телефон</th>
+                        <th>Дата рождения</th>
+                        <th>Дата найма</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="employeesTable">
+                    {% for employee in employees %}
+                    <tr>
+                        <td>{{ employee.Worker_id }}</td>
+                        <td>{{ employee.Full_name }}</td>
+                        <td>{{ employee.Position }}</td>
+                        <td>{{ employee.email }}</td>
+                        <td>{{ employee.Phone_number }}</td>
+                        <td>{{ employee.Birth_date.strftime('%d.%m.%Y') if employee.Birth_date else '-' }}</td>
+                        <td>{{ employee.Work_duration.strftime('%d.%m.%Y') if employee.Work_duration else '-' }}</td>
+                        <td>
+                            <a href="/employee/{{ employee.Worker_id }}/recommendations" class="btn btn-sm btn-info">Рекомендации</a>
+                            <button class="btn btn-sm btn-warning" onclick="editEmployee({{ employee.Worker_id }})">✏️</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteEmployee({{ employee.Worker_id }})">🗑️</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно добавления сотрудника -->
+<div class="modal fade" id="addEmployeeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить сотрудника</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addEmployeeForm">
+                    <div class="mb-3">
+                        <label class="form-label">ФИО *</label>
+                        <input type="text" name="Full_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Должность *</label>
+                        <input type="text" name="Position" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email *</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Телефон *</label>
+                        <input type="text" name="Phone_number" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Дата рождения</label>
+                        <input type="date" name="Birth_date" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Дата начала работы</label>
+                        <input type="date" name="Work_duration" class="form-control">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveEmployee()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchText = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#employeesTable tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchText) ? '' : 'none';
+    });
+});
+
+function saveEmployee() {
+    const form = document.getElementById('addEmployeeForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    if (!data.Birth_date) delete data.Birth_date;
+    if (!data.Work_duration) delete data.Work_duration;
+
+    fetch('/api/employees/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            return response.json().then(err => { throw new Error(err.detail); });
+        }
+    })
+    .catch(error => {
+        alert('Ошибка: ' + error.message);
+    });
+}
+
+function deleteEmployee(id) {
+    if (confirm('Удалить сотрудника?')) {
+        fetch(`/api/employees/${id}`, { method: 'DELETE' })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Ошибка при удалении');
+                }
+            });
+    }
+}
+
+function editEmployee(id) {
+    window.location.href = `/employee/${id}/edit`;
+}
+</script>
+{% endblock %}

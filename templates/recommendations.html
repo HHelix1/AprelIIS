@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Все рекомендации{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Рекомендации по обучению</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Сотрудник</th>
+                        <th>Программа</th>
+                        <th>Оценка</th>
+                        <th>Дата</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in recommendations %}
+                    <tr>
+                        <td>{{ rec.recommendation_id }}</td>
+                        <td>
+                            <a href="/employee/{{ rec.employee.Worker_id }}/recommendations">
+                                {{ rec.employee.Full_name }}
+                            </a>
+                        </td>
+                        <td>{{ rec.program.Name }}</td>
+                        <td>
+                            <span class="badge {% if rec.score >= 80 %}bg-success{% elif rec.score >= 60 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ rec.score }}%
+                            </span>
+                        </td>
+                        <td>{{ rec.creation_date.strftime('%d.%m.%Y') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

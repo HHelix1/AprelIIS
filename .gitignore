@@ -1,0 +1,155 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pythonenv*
+
+# Virtual Environment
+.venv
+venv
+env
+ENV
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.settings/
+.project
+.pydevproject
+*.sublime-*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+employee_training.db
+training_system.db
+
+# Logs
+*.log
+logs/
+log.txt
+*.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Generated data
+generated_data/
+*.csv
+*.xlsx
+*.xls
+
+# Reports
+generation_report_*.md
+
+# Uploads/Downloads
+uploads/
+downloads/
+temp/
+tmp/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.bak
+*.tmp
+
+# Project specific
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage reports
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# mypy
+.mypy_cache/
+.mypy_cache
+
+# pytype
+.pytype/
+
+# profiling data
+.prof
+*.prof
+
+# pip wheel files
+wheelhouse/
+*.whl
+
+# pip log
+pip-log.txt
+pip-delete-this-directory.txt
+
+# flask/rq etc sessions
+.session
+.secrets
+
+# docker
+.dockerignore
+docker-compose.override.yml
+
+# celery
+celerybeat-schedule
+celerybeat.pid
+
+# sphinx
+docs/_build/
+
+# backups
+*.backup
+*.old
+*.orig
+
+# TypeScript
+*.tsbuildinfo
+
+# Web files
+*.min.js
+*.min.css
+
+# Service files
+*.service
+
+# Local configuration
+config.local.*
+*.local.py
+
+# Generated HTML
+templates/__pycache__/
+
+# Data files
+*.data
+*.pickle
+*.pkl

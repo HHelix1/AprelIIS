@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Кластеризация сотрудников{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Кластеризация сотрудников</h1>
+        <p class="lead">Анализ и группировка сотрудников по характеристикам</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <label class="form-label">Количество кластеров:</label>
+                <select id="clusterCount" class="form-select">
+                    <option value="3">3 кластера</option>
+                    <option value="4" selected>4 кластера</option>
+                    <option value="5">5 кластеров</option>
+                    <option value="6">6 кластеров</option>
+                </select>
+                <button class="btn btn-primary mt-2 w-100" onclick="performClustering()">
+                    Выполнить кластеризацию
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body">
+                <canvas id="clusterChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4" id="clusterProfiles"></div>
+
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Сотрудники по кластерам</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="employeesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>ФИО</th>
+                                <th>Должность</th>
+                                <th>Кластер</th>
+                                <th>Успешность</th>
+                                <th>Стаж (лет)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let clusterChart = null;
+
+async function performClustering() {
+    const nClusters = document.getElementById('clusterCount').value;
+
+    try {
+        const response = await fetch(`/api/clustering/perform?n_clusters=${nClusters}`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            updateVisualization(data);
+            updateClusterProfiles(data);
+            updateEmployeesTable(data);
+        } else {
+            alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    } catch (error) {
+        alert('Ошибка при выполнении кластеризации: ' + error);
+    }
+}
+
+function updateVisualization(data) {
+    const ctx = document.getElementById('clusterChart').getContext('2d');
+
+    if (clusterChart) {
+        clusterChart.destroy();
+    }
+
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
+
+    const datasets = [];
+    for (let i = 0; i < data.n_clusters; i++) {
+        const points = data.points.filter(function(p) { return p.cluster === i; });
+        datasets.push({
+            label: 'Кластер ' + (i + 1),
+            data: points.map(function(p) { return {x: p.x, y: p.y}; }),
+            backgroundColor: colors[i % colors.length],
+            pointRadius: 8,
+            pointHoverRadius: 12
+        });
+    }
+
+    clusterChart = new Chart(ctx, {
+        type: 'scatter',
+        data: { datasets: datasets },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const point = data.points[context.dataIndex];
+                            return point.full_name + ' (' + point.position + ')';
+                        }
+                    }
+                },
+                legend: { position: 'top' },
+                title: { display: true, text: 'Визуализация кластеров сотрудников (PCA)' }
+            },
+            scales: {
+                x: { title: { display: true, text: 'Первая главная компонента' } },
+                y: { title: { display: true, text: 'Вторая главная компонента' } }
+            }
+        }
+    });
+}
+
+function updateClusterProfiles(data) {
+    const container = document.getElementById('clusterProfiles');
+    container.innerHTML = '<div class="row"></div>';
+    const rowDiv = container.querySelector('.row');
+
+    for (let i = 0; i < data.cluster_profiles.length; i++) {
+        const profile = data.cluster_profiles[i];
+        const colDiv = document.createElement('div');
+        colDiv.className = 'col-md-6 mb-3';
+        colDiv.innerHTML = `
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">Кластер ${profile.cluster_id + 1} (${profile.size} сотрудников)</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Средняя успешность:</strong> ${(profile.avg_success_rate * 100).toFixed(1)}%</p>
+                    <p><strong>Средний стаж:</strong> ${profile.avg_work_experience.toFixed(1)} лет</p>
+                    <p><strong>Средний возраст:</strong> ${profile.avg_age.toFixed(1)} лет</p>
+                    <p><strong>Обучений на сотрудника:</strong> ${profile.avg_trainings.toFixed(1)}</p>
+                    <p><strong>Средний балл рекомендаций:</strong> ${profile.avg_recommendation_score.toFixed(1)}</p>
+                </div>
+            </div>
+        `;
+        rowDiv.appendChild(colDiv);
+    }
+}
+
+function updateEmployeesTable(data) {
+    const tbody = document.getElementById('employeesTableBody');
+    tbody.innerHTML = '';
+
+    for (let i = 0; i < data.points.length; i++) {
+        const employee = data.points[i];
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = employee.employee_id;
+        row.insertCell(1).textContent = employee.full_name;
+        row.insertCell(2).textContent = employee.position;
+        row.insertCell(3).innerHTML = '<span class="badge bg-primary">Кластер ' + (employee.cluster + 1) + '</span>';
+        row.insertCell(4).textContent = (employee.success_rate * 100).toFixed(1) + '%';
+        row.insertCell(5).textContent = employee.work_experience.toFixed(1);
+    }
+}
+
+// Автоматическая кластеризация при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    performClustering();
+});
+</script>
+{% endblock %}

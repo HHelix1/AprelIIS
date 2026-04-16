@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - Система обучения{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Система учета обучения сотрудников</h1>
+        <p class="lead">Поиск рекомендаций по обучению для сотрудников</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Поиск сотрудника для получения рекомендаций</h5>
+            </div>
+            <div class="card-body">
+                <form id="searchForm" onsubmit="searchEmployee(event)">
+                    <div class="input-group mb-3">
+                        <input type="text" id="searchInput" class="form-control form-control-lg"
+                               placeholder="Введите ФИО сотрудника или email" required>
+                        <button class="btn btn-primary" type="submit">Найти</button>
+                    </div>
+                </form>
+                <div id="searchResults"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <h3 class="card-title">{{ stats.employees }}</h3>
+                <p class="card-text">Сотрудников</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <h3 class="card-title">{{ stats.education_programs }}</h3>
+                <p class="card-text">Программ обучения</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <h3 class="card-title">{{ stats.recommendations }}</h3>
+                <p class="card-text">Рекомендаций</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Быстрый доступ</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="/employees" class="btn btn-outline-primary w-100 mb-2">Сотрудники</a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/programs" class="btn btn-outline-success w-100 mb-2">Программы</a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/recommendations" class="btn btn-outline-info w-100 mb-2">Рекомендации</a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/clustering" class="btn btn-outline-warning w-100 mb-2">Кластеризация</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function searchEmployee(event) {
+    event.preventDefault();
+    const query = document.getElementById('searchInput').value;
+    const resultsDiv = document.getElementById('searchResults');
+
+    fetch(`/api/search-employee?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.found) {
+                window.location.href = `/employee/${data.worker_id}/recommendations`;
+            } else if (data.similar && data.similar.length > 0) {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        Сотрудник не найден. Показаны похожие результаты:
+                        <ul class="mt-2">
+                            ${data.similar.map(e => `<li><a href="/employee/${e.Worker_id}/recommendations">${e.Full_name} (${e.Position})</a></li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            } else {
+                resultsDiv.innerHTML = `<div class="alert alert-danger">Сотрудник не найден</div>`;
+            }
+        })
+        .catch(error => {
+            resultsDiv.innerHTML = `<div class="alert alert-danger">Ошибка: ${error}</div>`;
+        });
+}
+</script>
+{% endblock %}
