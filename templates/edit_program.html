@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Редактирование программы{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Главная</a></li>
+                <li class="breadcrumb-item"><a href="/programs">Программы</a></li>
+                <li class="breadcrumb-item active">Редактирование</li>
+            </ol>
+        </nav>
+        <h1>Редактирование программы</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Редактировать программу</h5>
+            </div>
+            <div class="card-body">
+                <form id="editProgramForm">
+                    <div class="mb-3">
+                        <label class="form-label">Номер протокола *</label>
+                        <input type="number" name="Protocol_number" class="form-control" value="{{ program.Protocol_number }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Название программы *</label>
+                        <input type="text" name="Name" class="form-control" value="{{ program.Name }}" required>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="/programs" class="btn btn-secondary">Отмена</a>
+                        <button type="button" class="btn btn-primary" onclick="saveProgram({{ program.Education_Id }})">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveProgram(programId) {
+    const form = document.getElementById('editProgramForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    fetch(`/api/education/${programId}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.href = '/programs';
+        } else {
+            return response.json().then(err => { throw new Error(err.detail); });
+        }
+    })
+    .catch(error => {
+        alert('Ошибка: ' + error.message);
+    });
+}
+</script>
+{% endblock %}

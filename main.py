@@ -380,6 +380,36 @@ def generate_employee_recommendations_endpoint(worker_id: int, count: int = 5, d
 def get_employee_stats_endpoint(worker_id: int, db: Session = Depends(get_db)):
     return get_employee_stats(db, worker_id)
 
+@app.get("/employee/{worker_id}/edit", response_class=HTMLResponse, tags=["UI"])
+async def edit_employee_page(request: Request, worker_id: int, db: Session = Depends(get_db)):
+    """Страница редактирования сотрудника"""
+    employee = get_employee(db, worker_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Сотрудник не найден")
+    return templates.TemplateResponse("edit_employee.html", {"request": request, "employee": employee})
+
+
+@app.get("/program/{program_id}/edit", response_class=HTMLResponse, tags=["UI"])
+async def edit_program_page(request: Request, program_id: int, db: Session = Depends(get_db)):
+    """Страница редактирования программы"""
+    program = get_education(db, program_id)
+    if not program:
+        raise HTTPException(status_code=404, detail="Программа не найдена")
+    return templates.TemplateResponse("edit_program.html", {"request": request, "program": program})
+
+
+# ==================== EDIT API ====================
+
+@app.put("/api/employees/{worker_id}", response_model=EmployeeResponse, tags=["Employees"])
+def update_employee_endpoint(worker_id: int, employee_update: EmployeeUpdate, db: Session = Depends(get_db)):
+    """Обновить данные сотрудника"""
+    return update_employee(db, worker_id, employee_update)
+
+
+@app.put("/api/education/{education_id}", response_model=EducationResponse, tags=["Education"])
+def update_education_endpoint(education_id: int, education_update: EducationUpdate, db: Session = Depends(get_db)):
+    """Обновить программу обучения"""
+    return update_education(db, education_id, education_update)
 
 # ==================== DATA GENERATION ====================
 
